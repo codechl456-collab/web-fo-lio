@@ -101,6 +101,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // complex pinned clone behavior on small screens where Chrome address
     // bar changes break the fixed positioning calculations.
     const marqueeMatchMedia = gsap.matchMedia();
+    // Desktop breakpoint helper used to gate horizontal scroll triggers
+    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
     let pinnedMarqueeImgClone = null;
     let isImgCloneActive = false;
 
@@ -196,108 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const aboutSection = document.querySelector('.about-section');
         let mobileContent = document.getElementById('mobile-marquee-content');
         
-        if (aboutSection && !mobileContent) {
-            mobileContent = document.createElement('div');
-            mobileContent.id = 'mobile-marquee-content';
-            mobileContent.innerHTML = `
-                <div style="text-align: center; padding: 3rem 1.5rem; margin: 2rem 0;">
-                    <h3 style="color: #000000ff; margin-bottom: 1rem; font-size: 1.5rem; font-weight: 600;">Welcome to My Portfolio</h3>
-                    <p style="color: #000000ff; font-size: 1.1rem; line-height: 1.6; margin-bottom: 1.5rem; max-width: 600px; margin-left: auto; margin-right: auto;">
-                        Explore my journey through innovative projects, creative solutions, and professional growth. Each section below showcases different aspects of my expertise and passion for development.
-                    </p>
-                    <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-top: 2rem;">
-                        <span style="padding: 0.5rem 1rem; border:1px solid white; background: rgba(0, 0, 0, 1); border-radius: 2px; color: #fff; font-size: 0.9rem;">Projects</span>
-                        <span style="padding: 0.5rem 1rem; border:1px solid white; background: rgba(0, 0, 0, 1); border-radius: 2px; color: #fff; font-size: 0.9rem;">Skills</span>
-                        <span style="padding: 0.5rem 1rem; border:1px solid white; background: rgba(0, 0, 0, 1); border-radius: 2px; color: #fff; font-size: 0.9rem;">Experience</span>
-                    </div>
-                     <div class="mobile-cta-section">
-                        <div class="cta-text">Ready to know more about me?</div>
-                        <div class="cta-arrow">↓</div>
-                    </div>
-                </div>
-                
-            `;
-            mobileContent.style.cssText = `
-                background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
-                border-radius: 12px;
-                backdrop-filter: blur(8px);
-                border: 1px solid rgba(255,255,255,0.1);
-                margin: 2rem 0;
-                position: relative;
-                overflow: hidden;
-            `;
-            
-            // Add custom styles for mobile content
-            if (!document.getElementById('mobile-content-style')) {
-                const style = document.createElement('style');
-                style.id = 'mobile-content-style';
-                style.textContent = `
-                    .mobile-cta-section {
-                        text-align: center;
-                        padding: 2rem;
-                        margin-top: 2rem;
-                        background: rgba(255,255,255,0.02);
-                        border-radius: 12px;
-                        border: 1px solid rgba(255,255,255,0.05);
-                    }
-                    
-                    .cta-text {
-                        font-size: 1.3rem;
-                        color: #777777ff;
-                        margin-bottom: 1rem;
-                        font-weight: 500;
-                    }
-                    
-                    .cta-arrow {
-                        font-size: 2rem;
-                        color: #9c9b9bff;
-                        animation: bounce 2s infinite;
-                    }
-                    
-                    @keyframes bounce {
-                        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-                        40% { transform: translateY(-10px); }
-                        60% { transform: translateY(-5px); }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-            
-            // Add a subtle animated background effect
-            const backgroundEffect = document.createElement('div');
-            backgroundEffect.style.cssText = `
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.03) 50%, transparent 70%);
-                animation: shimmer 3s ease-in-out infinite;
-                pointer-events: none;
-            `;
-            mobileContent.appendChild(backgroundEffect);
-            
-            // Add the shimmer animation
-            if (!document.getElementById('mobile-shimmer-style')) {
-                const style = document.createElement('style');
-                style.id = 'mobile-shimmer-style';
-                style.textContent = `
-                    @keyframes shimmer {
-                        0%, 100% { transform: translateX(-100%); }
-                        50% { transform: translateX(100%); }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-            
-            // Insert after the about-marquee section
-            const marqueeSection = aboutSection.querySelector('.about-marquee');
-            if (marqueeSection && marqueeSection.nextSibling) {
-                aboutSection.insertBefore(mobileContent, marqueeSection.nextSibling);
-            } else {
-                aboutSection.appendChild(mobileContent);
-            }
-        }
+        
 
         return {
             destroy() {
@@ -316,24 +217,34 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // 🧩 Mobile Chrome viewport fix applied (stable vh & invalidateOnRefresh)
-    ScrollTrigger.create({
-        trigger: ".about-horizontal-scroll",
-        start: "top top",
-        end: () => `+=${window.innerHeight * 5}`,
-        scrub: 0,
-        pin: true,
-        invalidateOnRefresh: true,
-        // Ensure pinned element receives GPU-acceleration and will-change while active
-        onToggle: (self) => {
-            const el = document.querySelector('.about-horizontal-scroll');
-            if (el && self.isActive) {
-                try { gsap.set(el, { force3D: true }); } catch (e) {}
-                el.style.willChange = 'transform, top, left';
-            } else if (el) {
-                el.style.willChange = '';
+    // Only create the heavy pinned horizontal ScrollTrigger on desktop
+    if (isDesktop) {
+        ScrollTrigger.create({
+            trigger: ".about-horizontal-scroll",
+            start: "top top",
+            end: () => `+=${window.innerHeight * 5}`,
+            scrub: 0,
+            pin: true,
+            invalidateOnRefresh: true,
+            // Ensure pinned element receives GPU-acceleration and will-change while active
+            onToggle: (self) => {
+                const el = document.querySelector('.about-horizontal-scroll');
+                if (el && self.isActive) {
+                    try { gsap.set(el, { force3D: true }); } catch (e) {}
+                    el.style.willChange = 'transform, top, left';
+                } else if (el) {
+                    el.style.willChange = '';
+                }
             }
-        }
-    });
+        });
+    } else {
+        // Non-desktop: ensure wrapper is reset to normal flow (vertical stacked cards)
+        try {
+            gsap.set(".about-horizontal-scroll-wrapper", { x: "0%" });
+            const el = document.querySelector('.about-horizontal-scroll');
+            if (el) el.style.willChange = '';
+        } catch (e) { /* ignore */ }
+    }
 
     // ScrollTrigger for marquee pinned clone moved inside desktop matchMedia above
 
@@ -419,37 +330,123 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     });
 
-    // Mobile: Simplified horizontal scroll without complex image clone animations
+    // Mobile: DO NOT create horizontal ScrollTriggers for the about section.
+    // Below desktop we want normal vertical flow (stacked cards). Ensure wrapper
+    // is reset and background is the light color.
     marqueeMatchMedia.add("(max-width: 1023px)", () => {
-        ScrollTrigger.create({
-            trigger: ".about-horizontal-scroll",
-            start: "top 50%",
-            // 🧩 Mobile Chrome viewport fix applied (stable vh & invalidateOnRefresh)
-            end: () => `+=${window.innerHeight * 5.5}`,
-            invalidateOnRefresh: true,
-            onUpdate: (self) => {
-                const progress = self.progress;
-                if (progress <= 0.05) {
-                    const bgColorProgress = Math.min(progress / 0.05, 1);
-                    const newBgColor = interpolateColor(lightColor, darkColor, bgColorProgress);
-                    gsap.set(".about-section", { backgroundColor: newBgColor });
-                } else if (progress >= 0.95) {
-                    gsap.set(".about-section", { backgroundColor: darkColor });
+        try {
+            gsap.set(".about-horizontal-scroll-wrapper", { x: "0%" });
+            gsap.set(".about-section", { backgroundColor: lightColor });
+            const el = document.querySelector('.about-horizontal-scroll');
+            if (el) el.style.willChange = '';
+            // Initialize lightweight flip-cards for each slide so mobile users
+            // see the image first and can flip to reveal the text content.
+            const slides = Array.from(document.querySelectorAll('.about-horizontal-slide:not(.about-horizontal-spacer)'));
+            slides.forEach((slide) => {
+                // Avoid double-initialization
+                if (slide.dataset.flipInit) return;
+
+                // Save original HTML so we can restore on destroy
+                slide.dataset.origInner = slide.innerHTML;
+
+                const cols = Array.from(slide.querySelectorAll('.col'));
+                if (cols.length < 2) return; // unexpected structure
+
+                const textCol = cols[0];
+                const imgCol = cols[1];
+
+                // Build flip structure: <div class="flip-inner"><div class="flip-front">[imgCol + overlay]</div><div class="flip-back">[textCol]</div></div>
+                const flipInner = document.createElement('div');
+                flipInner.className = 'flip-inner';
+
+                const front = document.createElement('div');
+                front.className = 'flip-front';
+
+                const back = document.createElement('div');
+                back.className = 'flip-back';
+
+                // Move nodes into faces
+                front.appendChild(imgCol);
+                back.appendChild(textCol);
+
+                // Create overlay button on the front image
+                const overlay = document.createElement('button');
+                overlay.type = 'button';
+                overlay.className = 'flip-overlay';
+                overlay.textContent = 'Flip to know more';
+                front.appendChild(overlay);
+
+                flipInner.appendChild(front);
+                flipInner.appendChild(back);
+
+                // Replace slide content with flipInner
+                slide.innerHTML = '';
+                slide.appendChild(flipInner);
+                slide.classList.add('flip-card');
+
+                // Wire interactions
+                function toggleFlip(e) {
+                    // prevent accidental double-handling when overlay is used
+                    slide.classList.toggle('is-flipped');
                 }
-                if (progress > 0.2 && progress <= 0.95) {
-                    const horizontalProgress = (progress - 0.2) / 0.75;
-                    const wrapperTranslateX = -66.7 * horizontalProgress;
-                    gsap.set(".about-horizontal-scroll-wrapper", { x: `${wrapperTranslateX}%` });
-                    // On mobile, no complex clone animation - just horizontal scroll
-                }
-            },
-        });
-        
+
+                overlay.addEventListener('click', toggleFlip);
+                // allow tapping the front image itself to flip too
+                front.addEventListener('click', (e) => {
+                    if (e.target === overlay) return; // overlay already handled
+                    toggleFlip();
+                });
+
+                // Allow flipping by clicking the back face (text) or the heading itself
+                back.addEventListener('click', (e) => {
+                    // If a user clicks a link or interactive element inside back, don't flip
+                    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+                    if (tag === 'a' || tag === 'button' || tag === 'input') return;
+                    toggleFlip();
+                });
+
+                // Also bind directly to the heading if present for clarity
+                try {
+                    const heading = back.querySelector('.heading--medium, h1, h2, h3');
+                    if (heading) {
+                        heading.style.cursor = 'pointer';
+                        // make heading keyboard-focusable and toggle on Enter/Space
+                        try { heading.tabIndex = 0; } catch (e) {}
+                        heading.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            toggleFlip();
+                        });
+                        heading.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                toggleFlip();
+                            }
+                        });
+                    }
+                } catch (e) { /* ignore */ }
+
+                // mark initialized
+                slide.dataset.flipInit = '1';
+            });
+        } catch (e) { /* ignore */ }
+
         return {
             destroy() {
-                // Reset section background when leaving mobile mode
-                gsap.set(".about-section", { backgroundColor: lightColor });
-                gsap.set(".about-horizontal-scroll-wrapper", { x: "0%" });
+                try {
+                    // Restore original slide markup
+                    const slides = Array.from(document.querySelectorAll('.about-horizontal-slide[data-flip-init]'));
+                    slides.forEach((s) => {
+                        if (s.dataset.origInner) s.innerHTML = s.dataset.origInner;
+                        s.classList.remove('flip-card', 'is-flipped');
+                        delete s.dataset.origInner;
+                        delete s.dataset.flipInit;
+                    });
+
+                    gsap.set(".about-horizontal-scroll-wrapper", { x: "0%" });
+                    gsap.set(".about-section", { backgroundColor: lightColor });
+                    const el = document.querySelector('.about-horizontal-scroll');
+                    if (el) el.style.willChange = '';
+                } catch (e) {}
             }
         };
     });
@@ -975,11 +972,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: 'power3.out' }
             );
 
-            tlForm.fromTo(formChildren,
-                { opacity: 0, y: 20 },
-                { opacity: 1, y: 0, duration: 0.6, stagger: 0.12, ease: 'power2.out' },
-                '-=0.4'
-            );
+            
         }
 
         // Animate social section
@@ -1803,6 +1796,48 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) {
             console.error('Animation initialization error:', e);
         }
+
+        // Hide the page loader only after ScrollTrigger is available and initialized.
+        // We'll poll for ScrollTrigger.getAll() to contain at least one trigger (or time out)
+        // to ensure pinned/refresh-heavy sections are ready before removing the loader.
+        try {
+            const loader = document.getElementById('page-loader');
+            async function waitForScrollTriggerReady(timeout = 3000) {
+                const start = performance.now();
+                return new Promise((resolve) => {
+                    (function check() {
+                        const ST = window.ScrollTrigger;
+                        try {
+                            if (ST && typeof ST.getAll === 'function') {
+                                const count = ST.getAll().length;
+                                // if at least one trigger exists, consider ready
+                                if (count > 0) return resolve(true);
+                                // otherwise, if no triggers but ScrollTrigger exists, we still
+                                // consider it "loaded" after a short stabilization period
+                                if (performance.now() - start > 250) return resolve(true);
+                            }
+                        } catch (e) {
+                            // ignore thrown errors during probing
+                        }
+                        if (performance.now() - start >= timeout) return resolve(false);
+                        setTimeout(check, 50);
+                    })();
+                });
+            }
+
+            if (loader) {
+                (async () => {
+                    const stReady = await waitForScrollTriggerReady(3000);
+                    // give the browser one more paint tick so final layout is stable
+                    requestAnimationFrame(() => requestAnimationFrame(() => {
+                        try {
+                            loader.classList.add('hidden');
+                            setTimeout(() => { try { loader.remove(); } catch (e) {} }, 900);
+                        } catch (e) {}
+                    }));
+                })();
+            }
+        } catch (err) { /* ignore */ }
     });
 
     // Ensure refresh/load doesn't auto-jump to anchors on reload.
